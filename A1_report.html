@@ -1,0 +1,1469 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Data Visualization Assignment 1</title>
+	<link rel="stylesheet" href="https://dig.cmu.edu/datavis-fall-2024/assignments/report.css" />
+	<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+	<script src="https://d3js.org/d3.v7.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 20px;
+			line-height: 1.6;
+		}
+
+		.chart {
+			margin: 30px 0;
+			border-bottom: 1px solid #eee;
+			padding-bottom: 20px;
+		}
+
+		.data-table {
+			border-collapse: collapse;
+			width: 100%;
+			margin: 20px 0;
+		}
+
+		.data-table th,
+		.data-table td {
+			border: 1px solid #ddd;
+			padding: 6px 8px;
+			text-align: left;
+			font-size: 14px;
+		}
+
+		.data-table th {
+			background-color: #3498db;
+			color: white;
+		}
+
+		.data-table tr:nth-child(even) {
+			background-color: #f2f2f2;
+		}
+
+		h2 {
+			color: #2c3e50;
+		}
+
+		h3 {
+			color: #34495e;
+		}
+
+		h4 {
+			color: #7f8c8d;
+		}
+
+		p {
+			margin: 15px 0;
+		}
+	</style>
+</head>
+
+<body>
+	<header>
+		<h1>
+			<small>Assignment 1</small>
+			Exploratory Data Analysis
+		</h1>
+		<p>
+			<strong>Anissa Patel</strong> — <em>anissapa@andrew.cmu.edu</em>
+		</p>
+	</header>
+	<main>
+		<section>
+			<h2>Fatal Accidental Overdoses in Allegheny County</h2>
+			<h3>Overall Analysis Questions</h3>
+			<ol>
+				<li>How has the composition of fatal overdoses changed over time, and what does this reveal about
+					evolving drug markets?</li>
+				<ul>
+					<li>Motivation: Drug markets shift rapidly. The opioid crisis moved from prescription pills (early
+						2000s) to heroin (2010s) to synthetic fentanyl (recent years).
+						This 2007-2025 dataset captures nearly two decades of change. Tracking which substances kill
+						people over time helps predict future threats and target interventions effectively.</li>
+					<li>Source: https://nida.nih.gov/research-topics/opioids</li>
+				</ul>
+				<li>How common are multi-drug overdoses, and which drug combinations are most lethal?</li>
+				<ul>
+					<li>Motivation: Media coverage focuses on single drugs like fentanyl, but this dataset records up to
+						10 substances per death.
+						Most fatal overdoses likely involve multiple drugs that interact dangerously. Identifying the
+						deadliest combinations informs treatment protocols and harm reduction messaging, yet gets little
+						public attention.</li>
+					<li>Source: https://nida.nih.gov/research-topics/opioids</li>
+					<li>Source: https://pmc.ncbi.nlm.nih.gov/articles/PMC7751289/</li>
+				</ul>
+				<li>How do demographic factors (age, race, gender) intersect with substance use patterns and overdose
+					risk?</li>
+				<ul>
+					<li>Motivation: Different groups may face different overdose risks through distinct pathways - young
+						people through street drugs, older adults through prescriptions, racial groups through
+						segregated markets.
+						These patterns expose systemic inequities in healthcare, economics, and policy that create
+						unequal vulnerability to overdose death.</li>
+					<li>Source: https://www.cdc.gov/overdose-prevention/about/social-determinants.html</li>
+				</ul>
+			</ol>
+		</section>
+
+		<section>
+			<h2>Discoveries & Insights</h2>
+
+			<h3>Data Overview</h3>
+
+			<p>This analysis examines 7,479 fatal overdose cases in Allegheny County, Pennsylvania from 2007-2025 -
+				nearly two decades that span the entire modern overdose crisis.
+				The timeline captures three distinct eras: the early prescription opioid wave, the heroin epidemic, and
+				today's synthetic fentanyl crisis.
+				Each case contains detailed records: up to 10 substances per death, demographic data, timing, and
+				location. Together, these variables create a comprehensive picture of how overdose patterns have
+				shifted, who they affect, and where they occur.</p>
+
+			<h4>Dataset Dimensions</h4>
+			<ul>
+				<li>Rows: 7,479 fatal overdose cases</li>
+				<li>Columns: 19 variables (temporal, quantitative, and nominal)</li>
+				<li>Time Span: 2007 - 2025</li>
+				<li>Geographic Coverage: Allegheny County, PA</li>
+			</ul>
+
+			<h4>Variable Structure and Data Types</h4>
+			<figure>
+				<table class="data-table">
+					<thead>
+						<tr>
+							<th>Variable Name</th>
+							<th>Description</th>
+							<th>Example Values</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr style="background-color: #e8f5e8;">
+							<td colspan="3"><strong>Temporal Variables (T)</strong></td>
+						</tr>
+						<tr>
+							<td>death_date_and_time</td>
+							<td>Date and time of death</td>
+							<td>2024-10-28T16:37:00</td>
+						</tr>
+						<tr>
+							<td>case_year</td>
+							<td>Year of death</td>
+							<td>2018, 2019, 2020</td>
+						</tr>
+						<tr style="background-color: #e8f4fd;">
+							<td colspan="3"><strong>Quantitative Variables (Q)</strong></td>
+						</tr>
+						<tr>
+							<td>_id</td>
+							<td>Unique case identifier</td>
+							<td>11567450, 11567451</td>
+						</tr>
+						<tr>
+							<td>age</td>
+							<td>Age of deceased (years)</td>
+							<td>31, 40, 37</td>
+						</tr>
+						<tr style="background-color: #fef9e7;">
+							<td colspan="3"><strong>Nominal Variables (N)</strong></td>
+						</tr>
+						<tr>
+							<td>manner_of_death</td>
+							<td>Classification of death</td>
+							<td>Accident</td>
+						</tr>
+						<tr>
+							<td>sex</td>
+							<td>Gender (unordered)</td>
+							<td>M, F</td>
+						</tr>
+						<tr>
+							<td>race</td>
+							<td>Race/ethnicity (unordered)</td>
+							<td>W, B, H, A</td>
+						</tr>
+						<tr>
+							<td>case_dispo</td>
+							<td>Case disposition</td>
+							<td>MO (Medical Officer)</td>
+						</tr>
+						<tr>
+							<td>combined_od1</td>
+							<td>Primary drug involved</td>
+							<td>Fentanyl, Cocaine, Heroin</td>
+						</tr>
+						<tr>
+							<td>combined_od2</td>
+							<td>Secondary drug involved</td>
+							<td>Alcohol, Methadone</td>
+						</tr>
+						<tr>
+							<td>combined_od3</td>
+							<td>Third drug involved</td>
+							<td>Oxycodone, Alprazolam</td>
+						</tr>
+						<tr>
+							<td>combined_od4</td>
+							<td>Fourth drug involved</td>
+							<td>Various substances</td>
+						</tr>
+						<tr>
+							<td>combined_od5</td>
+							<td>Fifth drug involved</td>
+							<td>Various substances</td>
+						</tr>
+						<tr>
+							<td>combined_od6</td>
+							<td>Sixth drug involved</td>
+							<td>Various substances</td>
+						</tr>
+						<tr>
+							<td>combined_od7</td>
+							<td>Seventh drug involved</td>
+							<td>Various substances</td>
+						</tr>
+						<tr>
+							<td>combined_od8</td>
+							<td>Eighth drug involved</td>
+							<td>Various substances</td>
+						</tr>
+						<tr>
+							<td>combined_od9</td>
+							<td>Ninth drug involved</td>
+							<td>Various substances</td>
+						</tr>
+						<tr>
+							<td>combined_od10</td>
+							<td>Tenth drug involved</td>
+							<td>Various substances</td>
+						</tr>
+						<tr>
+							<td>incident_zip</td>
+							<td>Zip code where death occurred</td>
+							<td>15227, 15213</td>
+						</tr>
+						<tr>
+							<td>decedent_zip</td>
+							<td>Zip code of residence</td>
+							<td>N/A</td>
+						</tr>
+					</tbody>
+				</table>
+				<figcaption>
+					This table summarizes the dataset's variable structure across three categories:
+					temporal, quantitative, and nominal. Temporal variables record when deaths occurred, while
+					quantitative variables capture measurable details such as case identifiers and age.
+					Nominal variables cover demographics and substances involved, with up to ten substances recorded per
+					case to account for polydrug overdoses. In addition, geographic variables enable the analysis of
+					spatial patterns in overdose trends.
+				</figcaption>
+			</figure>
+
+			<h4>Data Quality Assessment</h4>
+
+			<p>Before conducting any analysis, I performed data quality profiling to understand the dataset's
+				completeness, accuracy, and reliability.
+				This assessment revealed critical patterns that determined which analytical questions were viable and
+				exposed potential limitations in the
+				data collection process.
+			</p>
+
+			<figure>
+				<h5>Missing Data Assessment by Variable</h5>
+				<table class="data-table">
+					<thead>
+						<tr>
+							<th>Variable Name</th>
+							<th>Missing Values</th>
+							<th>Percentage (%)</th>
+							<th>Quality Impact</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>race</td>
+							<td>4</td>
+							<td>0.05</td>
+							<td>Minimal - demographic analysis viable</td>
+						</tr>
+						<tr>
+							<td>age</td>
+							<td>12</td>
+							<td>0.16</td>
+							<td>Minimal - age analysis viable</td>
+						</tr>
+						<tr>
+							<td>combined_od2</td>
+							<td>1,425</td>
+							<td>19.06</td>
+							<td>Moderate - affects polydrug analysis</td>
+						</tr>
+						<tr>
+							<td>combined_od3</td>
+							<td>3,390</td>
+							<td>45.33</td>
+							<td>Moderate - limits complex combination analysis</td>
+						</tr>
+						<tr>
+							<td>combined_od4</td>
+							<td>5,271</td>
+							<td>70.49</td>
+							<td>High - only 30% have 4+ substances</td>
+						</tr>
+						<tr>
+							<td>combined_od5-10</td>
+							<td>6,483-7,477</td>
+							<td>86.69-99.99</td>
+							<td>Very High - rare polydrug cases only</td>
+						</tr>
+						<tr>
+							<td>incident_zip</td>
+							<td>224</td>
+							<td>3.00</td>
+							<td>Low - geographic analysis viable</td>
+						</tr>
+						<tr>
+							<td>decedent_zip</td>
+							<td>7,478</td>
+							<td>100.00</td>
+							<td>Critical - prevents residence analysis</td>
+						</tr>
+					</tbody>
+				</table>
+				<figcaption>
+					This missing data analysis highlights patterns with important implications for analytical capacity.
+					Missing values increase systematically in the higher-order substance fields (combined_od5 - 10),
+					though
+					this reflects the rarity of complex polydrug cases rather than deficiencies in data quality. In
+					contrast,
+					demographic variables such as age, race, and gender demonstrate excellent completeness (< 0.2%
+						missing), supporting robust analysis. The one major limitation is the complete absence of
+						residential ZIP codes (decedent_zip), which prevents exploration of mobility patterns between
+						residence and overdose location. </figcaption>
+			</figure>
+
+			<body>
+
+				When first reviewing the dataset, I was especially interested in potential disparities between where
+				individuals lived and
+				where they died from overdoses, as these differences could shed light on access to resources and the
+				organization of local drug
+				markets. The dataset includes both residential ZIP codes (decedent_zip) and incident ZIP codes
+				(incident_zip) - a distinction that
+				could have revealed patterns related to treatment accessibility, socioeconomic conditions, and drug
+				distribution geography.
+				For example, if overdoses regularly occurred far from individuals’ homes, this might indicate
+				concentrated drug markets or
+				neighborhood-level inequities. Unfortunately, the decedent_zip field is entirely empty, eliminating the
+				possibility of pursuing
+				this line of analysis.
+
+
+				<p>In addition to missing value analysis, I performed outlier detection using both statistical methods
+					(interquartile range and
+					z-score analysis) and domain knowledge checks. This process flagged three cases with reported ages
+					over 95, twelve ZIP codes
+					with unusually high case counts, and eight cases involving more than seven substances
+					simultaneously. Upon closer inspection,
+					these records proved to be legitimate rather than data quality issues, though they highlight the
+					extreme variability in overdose
+					circumstances.</p>
+
+			</body>
+			<figure>
+				<div id="temporal-quality-chart"></div>
+				<figcaption>
+					This temporal data quality assessment indicates consistent and reliable collection practices across
+					the study period (2007–2025).
+					Annual case counts, shown alongside a trend line, capture the epidemiological trajectory of the
+					crisis: steady growth from 2007–2013,
+					a sharp surge during 2014–2017 with the emergence of fentanyl, and subsequent fluctuations linked to
+					policy interventions and supply
+					chain disruptions. Importantly, the absence of systematic gaps or artificial spikes suggests stable
+					data collection practices,
+					strengthening the credibility of temporal trend analyses. The slight decline in recent years likely
+					reflects both the impact of
+					interventions and potential reporting delays in the most recent data.
+				</figcaption>
+			</figure>
+
+			<figure>
+				<div id="demographic-profile-chart"></div>
+				<figcaption>
+					This demographic profile analysis confirms that the dataset provides representative coverage across
+					key demographic dimensions. Most overdose cases fall within the 25–55 age range. Gender distribution
+					shows a clear male predominance, with about 70% of cases involving men. Racial distribution
+					indicates a majority of White individuals, alongside substantial representation from Black and
+					Hispanic communities.
+				</figcaption>
+			</figure>
+
+			<h3>Question 1: Temporal Evolution of the Overdose Crisis</h3>
+
+			<p><strong>How has the composition of fatal overdoses changed over time, and what does this reveal about
+					evolving drug markets?</strong></p>
+
+			<p>To explore how the composition of fatal overdoses has changed over time, I began by examining which
+				substances appeared most frequently in the dataset. Using pandas in Python, I calculated the frequency
+				of each drug recorded as the primary substance (combined_od1) and identified the top eight drugs:
+				Fentanyl (2110), Cocaine (1679), Alcohol (1063), Heroin (550), Alprazolam (499), Acetyl Fentanyl (220),
+				Clonazepam (111), and Methadone (89). Since these accounted for the vast majority of cases, I grouped
+				all remaining substances into a single "Other" category. This step reduced noise from rarely occurring
+				drugs and made the visualization more interpretable, ensuring the analysis highlights the key substances
+				driving shifts in overdose trends.</p>
+
+			<figure>
+				<div id="vis"></div>
+				<figcaption>
+					This stacked area chart illustrates the transformation of Allegheny
+					County's fatal overdose crisis from 2007-2025, where the thickness of each colored band represents
+					the number of deaths caused by that substance. The visualization reveals three distinct phases: an
+					initial period (2007-2013) where the thickest bands were alcohol (green), cocaine (orange), and
+					heroin (brown), with relatively stable total deaths around 200 cases annually; a transition period
+					(2014-2016) marked by explosive growth in total overdoses reaching nearly 800 cases, driven
+					primarily by the emergence of thick bands of acetyl fentanyl (pink) and fentanyl (red); and a recent
+					plateau phase (2017-2025) where fentanyl (red) has become the thickest single band, indicating it
+					causes the most deaths and accounts for the largest portion of the 400-600 annual fatalities.
+					Notably, heroin's band (brown) virtually disappears after 2018, demonstrating the complete market
+					displacement by synthetic opioids. This pattern exemplifies the national transition from the second
+					wave (heroin) to the third wave (synthetic fentanyl) of the opioid epidemic.
+				</figcaption>
+			</figure>
+
+			<p>The stacked area chart revealed the broad outlines of market transformation, but it raised several
+				important questions requiring deeper investigation. While the visualization demonstrated fentanyl's
+				ascendance and heroin's decline, the overlapping colored bands made it difficult to pinpoint exactly
+				when and how dramatically this displacement occurred. Additionally, the annual aggregation obscured
+				potential seasonal variations that might reveal environmental or social factors influencing overdose
+				timing. Finally, the purely temporal view provided no insights into whether these changes occurred
+				uniformly across all neighborhoods or concentrated in specific geographic areas.</p>
+
+			<p>To address these limitations, I developed three follow-up analyses that examine different dimensions of
+				the temporal transformation: a focused comparison isolating the fentanyl-heroin displacement, a seasonal
+				analysis revealing monthly patterns in overdose timing, and a geographic analysis mapping spatial
+				variations in overdose concentration.</p>
+
+			<h4>Market Displacement Analysis</h4>
+
+			<figure>
+				<div id="vis-fentanyl-heroin-fixed"></div>
+				<figcaption>
+					This line chart illustrates the complete displacement of heroin by fentanyl in Allegheny County’s
+					fatal overdose cases from 2007–2025, with data validation filters applied to ensure accuracy. The
+					transformation unfolds in three phases. From 2007–2014, heroin remained a consistent presence with
+					15–60 annual deaths (peaking around 2012–2013), while fentanyl was virtually absent. In 2015–2016, a
+					sharp transition occurred: fentanyl deaths rose from fewer than 10 to over 50 annually as heroin
+					cases began to decline. From 2017 onward, fentanyl fully dominated the market, reaching peaks of
+					140+ deaths in 2017 and 2024, while heroin fell below 20 cases annually by 2018. This pattern
+					represents one of the most rapid and complete market shifts in modern public health, as synthetic
+					opioids displaced heroin within just three years - marking the transition from the epidemic’s second
+					wave (heroin) to its third wave (fentanyl).
+				</figcaption>
+			</figure>
+
+			<h4>Seasonal Patterns in Overdose Deaths</h4>
+
+			<figure>
+				<div id="vis-seasonal"></div>
+				<figcaption>
+					This bar chart shows relatively modest seasonal variation in Allegheny County’s fatal overdoses
+					between 2007 and 2025. March recorded the highest total at roughly 680 cases, followed by February
+					with about 650. Most other months fall within a narrow band of 590–620 deaths over the 18-year
+					period. The slight elevation in late winter and early spring (February–March) is noticeable but not
+					dramatic, with the gap between the highest and lowest months spanning only about 80–100 cases.
+					Overall, overdose deaths appear fairly evenly distributed throughout the year, though the small
+					seasonal uptick may relate to factors such as holiday stress or winter supply chain disruptions.
+				</figcaption>
+			</figure>
+
+			<h4>Geographic Concentration of the Crisis</h4>
+
+			<figure>
+				<div id="vis-geographic"></div>
+				<figcaption>
+					This horizontal bar chart highlights sharp geographic disparities in Allegheny County’s overdose
+					crisis. Zip code 15210 bears the heaviest burden, with approximately 380–400 fatal overdoses between
+					2007 and 2025. It is followed by 15212 with 280–300 cases, while 15136 and 15132 each show about
+					220–240. Several other zip codes - including 15216, 15235, 15221, and 15227 - cluster in the 180–200
+					range. The remaining zip codes decline progressively, from roughly 160 down to about 110 cases. This
+					concentration reveals that, although overdose deaths occur county-wide, certain neighborhoods face a
+					disproportionately high toll. The pattern likely reflects a combination of factors, including
+					proximity to drug markets, socioeconomic disadvantage, population density, and long-term
+					disinvestment that heighten community vulnerability.
+				</figcaption>
+			</figure>
+
+			<p>
+
+				The temporal analysis of fatal overdoses in Allegheny County reveals a profound transformation that
+				mirrors the national opioid epidemic's evolution while highlighting unique local characteristics. The
+				data demonstrates a clear three-phase progression: from a relatively stable mixed-substance crisis
+				dominated by traditional drugs like alcohol, cocaine, and heroin (2007-2013), through a catastrophic
+				transition period marked by the emergence of synthetic opioids (2014-2016), to the current
+				fentanyl-dominated landscape that has plateaued at historically high levels (2017-2025). The complete
+				displacement of heroin by fentanyl within just three years represents one of the most rapid and thorough
+				market shifts documented in public health literature, underscoring the synthetic opioid supply's
+				efficiency and lethality. While seasonal variations remain modest, suggesting that environmental factors
+				play a limited role compared to structural market forces, the stark geographic concentration of deaths
+				across zip codes reveals that this crisis disproportionately impacts specific communities. This
+				geographic clustering, combined with the market's rapid synthetic transformation, indicates that
+				effective intervention strategies must address both the immediate dangers of fentanyl supply and the
+				underlying socioeconomic vulnerabilities that concentrate risk in particular neighborhoods.
+			</p>
+
+			<h3>Question 2: The Hidden Complexity of Polydrug Overdoses</h3>
+
+			<p><strong>How common are multi-drug overdoses, and which drug combinations are most lethal?</strong></p>
+
+			<p>Public health discourse often frames the overdose crisis around single substances - "the fentanyl crisis"
+				or "the heroin epidemic" - but this dataset's inclusion of up to 10 substances per case suggests a more
+				complex reality. To investigate the true scope of polydrug involvement, I systematically analyzed
+				substance co-occurrence patterns, examining both the frequency of multi-drug cases and identifying the
+				most dangerous combinations. This analysis challenges single-substance narratives and reveals the
+				complex toxicological interactions that characterize modern fatal overdoses.</p>
+
+			<h4>The Prevalence of Multi-Drug Use</h4>
+
+			<figure>
+				<div id="vis-substance-count"></div>
+				<figcaption>
+					This bar chart challenges the notion of a single-substance overdose crisis by showing that
+					multi-drug involvement is overwhelmingly the norm in Allegheny County from 2007–2025. Only about 19%
+					of fatal overdoses involved a single substance, while 81% reflected combinations of two or more. The
+					largest share came from two-substance overdoses (26%), closely followed by three-substance cases
+					(25%), with four or more substances present in roughly 15% of deaths. This pattern underscores that
+					fatal overdoses are rarely attributable to one drug alone; instead, they typically arise from
+					complex interactions among depressants, stimulants, and prescription medications. These findings
+					highlight the need for harm reduction and treatment strategies that address polydrug use
+					holistically, rather than focusing narrowly on a single substance like fentanyl.
+				</figcaption>
+			</figure>
+
+			<h4>Identifying the Most Lethal Combinations</h4>
+
+			<figure>
+				<div id="vis-drug-combinations"></div>
+				<figcaption>
+					This horizontal bar chart identifies the specific two-drug combinations driving Allegheny County's
+					overdose mortality, revealing dangerous polydrug patterns that create amplified toxicological risk.
+					Cocaine + Fentanyl is by far the most lethal two-drug
+					combination, accounting for over 1,000 fatal cases in Allegheny County from 2007-2025. Fentanyl +
+					Heroin ranks second with approximately 500-600 cases, while Alcohol + Cocaine comes third with
+					around 350-400 cases. The chart shows several other combinations involving fentanyl variants (Acetyl
+					Fentanyl + Fentanyl, Fentanyl + Para-Fluorofentanyl) and traditional pairings (Cocaine + Heroin,
+					Alcohol + Fentanyl) with progressively lower case counts ranging from roughly 300 down to under 100
+					cases.
+					The dominance of fentanyl-based combinations throughout this
+					ranking reflects both the prevalence of synthetic opioids in the local drug supply and fentanyl's
+					particularly lethal nature when mixed with other central nervous system depressants or when combined
+					with stimulants that mask warning signs.
+				</figcaption>
+			</figure>
+
+			<body>
+				<p>
+					After analyzing the distribution of substances in fatal overdoses and identifying the most common
+					two-drug combinations, a critical question emerged: what underlying patterns drive polydrug
+					involvement? The initial findings showed that 81% of overdoses involve multiple substances, with
+					cocaine + fentanyl standing out as the deadliest pairing, linked to more than 1,000 deaths.
+
+				</p>
+				<p>
+					The dominance of multi-drug cases suggested that substances may follow distinct co-occurrence
+					patterns - some appearing mostly in isolation, others almost always alongside additional drugs.
+					Recognizing these differences could clarify whether certain substances, like fentanyl, routinely
+					contaminate drug supplies or are deliberately combined, while prescription medications may more
+					often cause overdoses on their own.
+
+				</p>
+				<p>
+					This led to a follow-up question: which substances most commonly appear together, and which
+					occur in isolation? Answering this could illuminate the mechanisms behind overdose risk - whether
+					contamination, intentional mixing, or single-drug use - and guide more targeted prevention
+					strategies.
+
+				</p>
+			</body>
+
+
+			<h4>Identifying Substance Co-ocurrence Patterns</h4>
+			<figure>
+				<div id="vis-polydrug-interaction"></div>
+				<figcaption>
+					This stacked bar chart highlights distinct patterns in how substances appear in fatal overdoses,
+					distinguishing between isolated use (a single substance) and co-occurring use (multiple substances
+					present). Fentanyl, cocaine, and alcohol show the highest co-occurrence rates - approximately 85%,
+					80%, and 90%, respectively - indicating that they rarely appear alone and are frequently combined
+					with
+					or contaminated by other drugs. Heroin falls in the middle, with about 70% of cases involving co-use
+					and 30% occurring in isolation. In contrast, alprazolam and acetyl fentanyl display largely isolated
+					patterns, with alprazolam appearing alone in about 95% of cases and acetyl fentanyl in roughly 98%.
+
+					These findings challenge single-substance prevention models by revealing that the most lethal
+					substances - fentanyl, cocaine, and alcohol - are overwhelmingly encountered in complex polydrug
+					scenarios. </figcaption>
+			</figure>
+
+
+
+
+			<!-- <h4>Evolution of Polydrug Patterns</h4>
+			<figure>
+				<div id="vis-polydrug-trends"></div>
+				<figcaption>
+					This proportional stacked area chart illustrates the shifting balance between single-drug and
+					multi-drug fatal overdoses in Allegheny County from 2007–2025. In the early years (2007–2009),
+					single-drug overdoses (blue area) made up about 30–35% of cases, then dipped to roughly 25% around
+					2009–2010. They rebounded during 2012–2014 to 35–40%, but beginning in 2015 experienced a steep
+					decline, reaching their lowest point—about 8–10%—by 2019 at the height of the fentanyl era. Since
+					then, single-drug cases have partially recovered, rising to around 20–25% by 2025. Across the entire
+					period, multi-drug overdoses (red area) consistently dominated, with their share peaking above 90%
+					in 2019–2020 when complex combinations were most prevalent. This trajectory suggests that fentanyl’s
+					emergence accelerated polydrug use, while the recent modest rebound of single-substance cases may
+					reflect shifting use patterns or changes in the drug supply.
+				</figcaption>
+			</figure> -->
+
+			<p>
+				The analysis of polydrug involvement in Allegheny County’s fatal overdoses challenges the prevailing
+				single-substance narrative and reveals a far more complex toxicological reality. With 81% of cases
+				involving multiple substances, polydrug use is not an outlier but the norm - making interactions between
+				drugs, rather than any one substance, the primary driver of mortality. The prominence of the
+				cocaine–fentanyl pairing, linked to more than 1,000 deaths, illustrates how stimulant–depressant
+				combinations are uniquely dangerous: stimulants can obscure opioid overdose warning signs, while
+				fentanyl contamination often occurs without users’ awareness. Co-occurrence patterns reinforce this
+				dynamic. Fentanyl, cocaine, and alcohol appear with other drugs in 80–90% of cases, pointing to
+				widespread contamination and intentional mixing practices, whereas prescription medications like
+				alprazolam more often underlie single-substance deaths.
+
+			</p>
+
+			<h3>Question 3: Demographic Disparities and Structural Inequities</h3>
+
+			<p><strong>How do demographic factors (age, race, gender) intersect with substance use patterns and overdose
+					risk?</strong></p>
+
+			<p>Understanding how age, race, and gender intersect with
+				substance use patterns is essential for developing equitable interventions and addressing structural
+				factors that contribute to overdose risk. This analysis examines whether certain demographic groups face
+				disproportionate exposure to specific substances, experience different trajectories through the evolving
+				crisis, or concentrate in particular geographic areas, potentially revealing systemic inequities in
+				healthcare access, criminal justice treatment, or socioeconomic opportunities that influence overdose
+				outcomes.</p>
+
+			<h4>Age-Based Substance Pathways</h4>
+
+			<figure>
+				<div id="vis-age-substance-patterns"></div>
+				<figcaption>
+					This chart reveals that alcohol is the dominant substance across all age groups, with younger adults
+					(18-34) showing the highest overall substance use patterns. The bars extending beyond 200% indicate
+					significant polysubstance use, where individuals use multiple substances simultaneously. Cocaine use
+					is most prevalent among younger age groups and decreases with age, while fentanyl maintains a
+					concerning presence across all demographics. The 45-54 age group shows the lowest total substance
+					involvement, but even the oldest group (55+) demonstrates substantial usage rates around 220%,
+					highlighting that substance use disorders persist throughout the lifespan and often involve multiple
+					substances concurrently.
+				</figcaption>
+			</figure>
+
+			<h4>Racial Disparities in Crisis Timing</h4>
+
+			<figure>
+				<div id="vis-racial-disparities"></div>
+				<figcaption>
+					This chart shows striking racial disparities in overdose deaths over time, with White individuals
+					experiencing dramatically higher death rates that peaked around 2017 at over 600 annual deaths
+					before declining sharply by 2025 to approximately 100 deaths. Black overdose deaths followed a
+					different trajectory, remaining relatively low and stable from 2007-2015, then steadily increasing
+					from around 50 deaths to peak at about 200 deaths in 2023 before declining. Hispanic overdose deaths
+					remained consistently low throughout the entire time period, never exceeding roughly 25 annual
+					deaths. The data reveals not only significant racial health disparities but also suggests different
+					phases of the overdose crisis may have disproportionately affected different communities, with the
+					White population experiencing an earlier and more severe crisis that has since subsided, while Black
+					communities saw increases during the latter part of the timeframe.
+				</figcaption>
+			</figure>
+
+			<h4>Gender Differences in Polydrug Complexity</h4>
+
+			<figure>
+				<div id="vis-gender-polydrug"></div>
+				<figcaption>
+					The polydrug complexity analysis reveals that single-substance overdoses dominate fatal cases across
+					both genders, with approximately 95% of deaths involving just one primary substance, while polydrug
+					involvement decreases substantially as complexity increases - dropping to around 55-60% for two
+					substances, 35-40% for three substances, and 30-35% for four or more substances. Gender differences
+					appear minimal across all complexity levels, suggesting that patterns of polydrug use in fatal
+					overdoses are remarkably similar between males and females. This distribution challenges assumptions
+					about widespread polydrug abuse in overdose deaths and indicates that while polysubstance use
+					certainly occurs and poses significant risks, the majority of fatal overdoses stem from single
+					substances, which has important implications for prevention strategies, harm reduction approaches,
+					and understanding the primary drivers of overdose mortality in this population.
+				</figcaption>
+			</figure>
+
+			<p>
+
+				Demographic factors create distinct overdose trajectories that reveal structural inequities in how
+				different groups encounter the crisis. White individuals experienced peak mortality around 2017 (600+
+				deaths annually) before declining, while Black individuals saw steady increases from 2015-2023 (reaching
+				200 deaths annually), suggesting different pathways into the same epidemic. Age patterns show
+				substantial polydrug involvement across all adult age groups, including those over 55, indicating that
+				overdose risk persists throughout the lifespan rather than concentrating in young populations. Gender
+				differences in polydrug complexity are minimal, but this apparent equality may mask different social
+				pathways to equivalent outcomes. These disparities reveal that structural factors - healthcare access,
+				prescription practices, market segregation - shape when and how different groups encounter dangerous
+				substances, rather than individual behavioral differences driving overdose risk.
+
+			</p>
+
+		</section>
+
+		<section>
+			<h2>Summary</h2>
+			<p>
+
+				This analysis of 7,479 fatal overdose cases in Allegheny County (2007-2025) reveals three key findings.
+				First, drug markets undergo rapid transformation - fentanyl completely displaced heroin within three
+				years (2015-2018), driving deaths from 200 to 800 annually before stabilizing around 400-600. Second,
+				polydrug overdoses dominate at 81% of cases, with cocaine + fentanyl being the deadliest combination
+				(1,000+ deaths). Third, demographic groups experience different crisis trajectories - White deaths
+				peaked in 2017 then declined, while Black deaths rose steadily through 2023, indicating structural
+				inequities in how communities encounter dangerous substances. The crisis is characterized by synthetic
+				drug innovation, supply chain contamination, and differential vulnerability rather than gradual
+				evolution or uniform impact.
+
+			</p>
+		</section>
+	</main>
+
+	<!-- All JavaScript for visualizations -->
+	<script>
+		// Chart 1: Main composition over time
+		const spec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Composition of Fatal Overdoses Over Time",
+				"subtitle": "Primary substances in fatal overdose cases, Allegheny County (2007-2025)",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 400,
+			"data": {
+				"url": "overdose_data.csv"
+			},
+			"transform": [
+				{
+					"calculate": "datum.combined_od1 == 'Fentanyl' || datum.combined_od1 == 'Cocaine' || datum.combined_od1 == 'Alcohol' || datum.combined_od1 == 'Heroin' || datum.combined_od1 == 'Alprazolam' || datum.combined_od1 == 'Acetyl Fentanyl' || datum.combined_od1 == 'Clonazepam' || datum.combined_od1 == 'Methadone' ? datum.combined_od1 : 'Other'",
+					"as": "substance_category"
+				},
+				{
+					"aggregate": [{ "op": "count", "as": "count" }],
+					"groupby": ["case_year", "substance_category"]
+				}
+			],
+			"mark": {
+				"type": "area",
+				"interpolate": "monotone"
+			},
+			"encoding": {
+				"x": {
+					"field": "case_year",
+					"type": "ordinal",
+					"title": "Year",
+					"axis": { "labelAngle": 0 }
+				},
+				"y": {
+					"field": "count",
+					"type": "quantitative",
+					"title": "Number of Fatal Overdoses",
+					"stack": "zero"
+				},
+				"color": {
+					"field": "substance_category",
+					"type": "nominal",
+					"title": "Primary Substance",
+					"scale": {
+						"domain": ["Fentanyl", "Cocaine", "Alcohol", "Heroin", "Alprazolam", "Acetyl Fentanyl", "Clonazepam", "Methadone", "Other"],
+						"range": ["#d62728", "#ff7f0e", "#2ca02c", "#8c564b", "#9467bd", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]
+					}
+				},
+				"tooltip": [
+					{ "field": "case_year", "type": "ordinal", "title": "Year" },
+					{ "field": "substance_category", "type": "nominal", "title": "Substance" },
+					{ "field": "count", "type": "quantitative", "title": "Cases" }
+				]
+			}
+		};
+		vegaEmbed('#vis', spec).catch(console.error);
+
+		// Temporal Quality Chart
+		const temporalQualitySpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Data Collection Consistency Over Time",
+				"subtitle": "Annual case counts with trend analysis",
+				"fontSize": 14,
+				"subtitleFontSize": 12
+			},
+			"width": 600,
+			"height": 300,
+			"data": { "url": "overdose_data.csv" },
+			"layer": [
+				{
+					"transform": [
+						{ "aggregate": [{ "op": "count", "as": "cases" }], "groupby": ["case_year"] }
+					],
+					"mark": { "type": "bar", "color": "#3498db" },
+					"encoding": {
+						"x": { "field": "case_year", "type": "ordinal", "title": "Year" },
+						"y": { "field": "cases", "type": "quantitative", "title": "Number of Cases" },
+						"tooltip": [
+							{ "field": "case_year", "title": "Year" },
+							{ "field": "cases", "title": "Cases" }
+						]
+					}
+				},
+				{
+					"transform": [
+						{ "aggregate": [{ "op": "count", "as": "cases" }], "groupby": ["case_year"] },
+						{ "window": [{ "op": "mean", "field": "cases", "as": "trend" }], "frame": [-2, 2] }
+					],
+					"mark": { "type": "line", "color": "#e74c3c", "strokeWidth": 3 },
+					"encoding": {
+						"x": { "field": "case_year", "type": "ordinal" },
+						"y": { "field": "trend", "type": "quantitative" }
+					}
+				}
+			]
+		};
+		vegaEmbed('#temporal-quality-chart', temporalQualitySpec).catch(console.error);
+
+		// Demographic Profile Chart
+		const demographicProfileSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Demographic Profile of Cases",
+				"fontSize": 14,
+				"offset": 20
+			},
+			"spacing": 40,
+			"data": { "url": "overdose_data.csv" },
+			"hconcat": [
+				{
+					"title": {
+						"text": "Age Distribution",
+						"offset": 10
+					},
+					"width": 200,
+					"height": 200,
+					"transform": [{ "filter": "datum.age != null" }],
+					"mark": "bar",
+					"encoding": {
+						"x": {
+							"field": "age",
+							"type": "quantitative",
+							"bin": { "maxbins": 15 },
+							"title": "Age"
+						},
+						"y": { "aggregate": "count", "title": "Cases" },
+						"color": { "value": "#2ecc71" }
+					}
+				},
+				{
+					"title": {
+						"text": "Gender Distribution",
+						"offset": 10
+					},
+					"width": 200,
+					"height": 200,
+					"transform": [{ "filter": "datum.sex != null" }],
+					"mark": "arc",
+					"encoding": {
+						"theta": { "aggregate": "count" },
+						"color": {
+							"field": "sex",
+							"scale": { "range": ["#3498db", "#e67e22"] },
+							"title": "Gender",
+							"legend": {
+								"orient": "right",
+								"offset": 10
+							}
+						}
+					}
+				},
+				{
+					"title": {
+						"text": "Race Distribution",
+						"offset": 10
+					},
+					"width": 200,
+					"height": 200,
+					"transform": [{ "filter": "datum.race != null" }],
+					"mark": "bar",
+					"encoding": {
+						"x": { "field": "race", "title": "Race" },
+						"y": { "aggregate": "count", "title": "Cases" },
+						"color": { "value": "#9b59b6" }
+					}
+				}
+			]
+		};
+		vegaEmbed('#demographic-profile-chart', demographicProfileSpec).catch(console.error);
+
+
+		// Fentanyl vs Heroin Fixed
+		const fentanylHeroinFixedSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Fentanyl vs Heroin: Market Displacement Over Time",
+				"subtitle": "Number of fatal overdoses by primary substance, Allegheny County (2007-2025)",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 400,
+
+			"data": {
+				"url": "overdose_data.csv"
+			},
+			"transform": [
+				{
+					"filter": "datum.combined_od1 != null && datum.combined_od1 != ''"
+				},
+				{
+					"filter": "datum.case_year >= 2007 && datum.case_year <= 2025"
+				},
+				{
+					"filter": "datum.combined_od1 == 'Fentanyl' || datum.combined_od1 == 'Heroin'"
+				},
+				{
+					"aggregate": [{ "op": "count", "as": "count" }],
+					"groupby": ["case_year", "combined_od1"]
+				},
+				{
+					"filter": "datum.count <= 150"
+				}
+			],
+			"mark": {
+				"type": "line",
+				"point": true,
+				"strokeWidth": 3
+			},
+			"encoding": {
+				"x": {
+					"field": "case_year",
+					"type": "ordinal",
+					"title": "Year"
+				},
+				"y": {
+					"field": "count",
+					"type": "quantitative",
+					"title": "Number of Fatal Overdoses",
+					"scale": { "domain": [0, 150], "nice": true }
+				},
+				"color": {
+					"field": "combined_od1",
+					"type": "nominal",
+					"title": "Substance",
+					"scale": {
+						"domain": ["Fentanyl", "Heroin"],
+						"range": ["#d62728", "#8c564b"]
+					}
+				},
+				"tooltip": [
+					{ "field": "case_year", "type": "ordinal", "title": "Year" },
+					{ "field": "combined_od1", "type": "nominal", "title": "Substance" },
+					{ "field": "count", "type": "quantitative", "title": "Cases" }
+				]
+			}
+		};
+		vegaEmbed('#vis-fentanyl-heroin-fixed', fentanylHeroinFixedSpec).catch(console.error);
+
+		// Seasonal Chart
+		const seasonalSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Seasonal Patterns in Fatal Overdoses",
+				"subtitle": "Total deaths by month, Allegheny County (2007-2025)",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 400,
+			"data": {
+				"url": "overdose_data.csv"
+			},
+			"transform": [
+				{
+					"calculate": "month(datetime(datum.death_date_and_time))",
+					"as": "death_month"
+				},
+				{
+					"calculate": "datum.death_month == 1 ? 'Jan' : datum.death_month == 2 ? 'Feb' : datum.death_month == 3 ? 'Mar' : datum.death_month == 4 ? 'Apr' : datum.death_month == 5 ? 'May' : datum.death_month == 6 ? 'Jun' : datum.death_month == 7 ? 'Jul' : datum.death_month == 8 ? 'Aug' : datum.death_month == 9 ? 'Sep' : datum.death_month == 10 ? 'Oct' : datum.death_month == 11 ? 'Nov' : 'Dec'",
+					"as": "month_name"
+				},
+				{
+					"aggregate": [{ "op": "count", "as": "total_deaths" }],
+					"groupby": ["death_month", "month_name"]
+				}
+			],
+			"mark": {
+				"type": "bar",
+				"color": "#2ca02c"
+			},
+			"encoding": {
+				"x": {
+					"field": "month_name",
+					"type": "ordinal",
+					"title": "Month",
+					"sort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+				},
+				"y": {
+					"field": "total_deaths",
+					"type": "quantitative",
+					"title": "Total Fatal Overdoses (2007-2025)"
+				},
+				"tooltip": [
+					{ "field": "month_name", "type": "nominal", "title": "Month" },
+					{ "field": "total_deaths", "type": "quantitative", "title": "Total Deaths" }
+				]
+			}
+		};
+		vegaEmbed('#vis-seasonal', seasonalSpec).catch(console.error);
+
+		// Geographic Chart
+		const geographicSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Geographic Distribution of Fatal Overdoses",
+				"subtitle": "Total deaths by zip code, Allegheny County (2007-2025)",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 500,
+			"data": {
+				"url": "overdose_data.csv"
+			},
+			"transform": [
+				{
+					"filter": "datum.incident_zip != null"
+				},
+				{
+					"aggregate": [{ "op": "count", "as": "total_deaths" }],
+					"groupby": ["incident_zip"]
+				},
+				{
+					"filter": "datum.total_deaths >= 20"
+				},
+				{
+					"window": [{ "op": "rank", "as": "rank" }],
+					"sort": [{ "field": "total_deaths", "order": "descending" }]
+				},
+				{
+					"filter": "datum.rank <= 20"
+				}
+			],
+			"mark": {
+				"type": "bar",
+				"color": "#ff7f0e"
+			},
+			"encoding": {
+				"y": {
+					"field": "incident_zip",
+					"type": "nominal",
+					"title": "Zip Code",
+					"sort": { "field": "total_deaths", "order": "descending" }
+				},
+				"x": {
+					"field": "total_deaths",
+					"type": "quantitative",
+					"title": "Total Fatal Overdoses (2007-2025)"
+				},
+				"tooltip": [
+					{ "field": "incident_zip", "type": "nominal", "title": "Zip Code" },
+					{ "field": "total_deaths", "type": "quantitative", "title": "Total Deaths" }
+				]
+			}
+		};
+		vegaEmbed('#vis-geographic', geographicSpec).catch(console.error);
+
+		// Substance Count Chart
+		// Fixed Substance Count Chart - replace the existing one
+		const substanceCountSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Distribution of Substances per Fatal Overdose",
+				"subtitle": "Frequency of single vs multi-drug overdoses, Allegheny County (2007-2025)",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 400,
+			"data": {
+				"url": "overdose_data.csv"
+			},
+			"transform": [
+				{
+					"calculate": "(datum.combined_od1 != null && datum.combined_od1 != '' ? 1 : 0) + (datum.combined_od2 != null && datum.combined_od2 != '' ? 1 : 0) + (datum.combined_od3 != null && datum.combined_od3 != '' ? 1 : 0) + (datum.combined_od4 != null && datum.combined_od4 != '' ? 1 : 0) + (datum.combined_od5 != null && datum.combined_od5 != '' ? 1 : 0)",
+					"as": "substance_count"
+				},
+				{
+					"filter": "datum.substance_count > 0"
+				},
+				{
+					"aggregate": [{ "op": "count", "as": "cases" }],
+					"groupby": ["substance_count"]
+				},
+				{
+					"joinaggregate": [{ "op": "sum", "field": "cases", "as": "total_cases" }]
+				},
+				{
+					"calculate": "datum.cases / datum.total_cases * 100",
+					"as": "percentage"
+				}
+			],
+			"mark": {
+				"type": "bar",
+				"color": "#2ca02c"
+			},
+			"encoding": {
+				"x": {
+					"field": "substance_count",
+					"type": "ordinal",
+					"title": "Number of Substances"
+				},
+				"y": {
+					"field": "percentage",
+					"type": "quantitative",
+					"title": "Percentage of Cases (%)"
+				},
+				"tooltip": [
+					{ "field": "substance_count", "type": "ordinal", "title": "Number of Substances" },
+					{ "field": "cases", "type": "quantitative", "title": "Number of Cases" },
+					{ "field": "percentage", "type": "quantitative", "title": "Percentage", "format": ".1f" }
+				]
+			}
+		};
+		vegaEmbed('#vis-substance-count', substanceCountSpec).catch(console.error);
+
+		// Drug Combinations Chart
+		const drugCombinationSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Most Common Fatal Two-Drug Combinations",
+				"subtitle": "Top 15 drug pairs in fatal overdoses, Allegheny County (2007-2025)",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 500,
+			"data": {
+				"url": "overdose_data.csv"
+			},
+			"transform": [
+				{
+					"filter": "datum.combined_od1 != null && datum.combined_od2 != null && datum.combined_od1 != '' && datum.combined_od2 != ''"
+				},
+				{
+					"calculate": "datum.combined_od1 < datum.combined_od2 ? datum.combined_od1 + ' + ' + datum.combined_od2 : datum.combined_od2 + ' + ' + datum.combined_od1",
+					"as": "drug_combination"
+				},
+				{
+					"aggregate": [{ "op": "count", "as": "cases" }],
+					"groupby": ["drug_combination"]
+				},
+				{
+					"window": [{ "op": "rank", "as": "rank" }],
+					"sort": [{ "field": "cases", "order": "descending" }]
+				},
+				{
+					"filter": "datum.rank <= 15"
+				}
+			],
+			"mark": {
+				"type": "bar",
+				"color": "#d62728"
+			},
+			"encoding": {
+				"y": {
+					"field": "drug_combination",
+					"type": "nominal",
+					"title": "Drug Combination",
+					"sort": { "field": "cases", "order": "descending" },
+					"axis": {
+						"labelLimit": 160,
+						"labelFontSize": 11
+					}
+				},
+				"x": {
+					"field": "cases",
+					"type": "quantitative",
+					"title": "Number of Fatal Cases"
+				},
+				"tooltip": [
+					{ "field": "drug_combination", "type": "nominal", "title": "Combination" },
+					{ "field": "cases", "type": "quantitative", "title": "Fatal Cases" }
+				]
+			}
+		};
+
+		vegaEmbed('#vis-drug-combinations', drugCombinationSpec).catch(console.error);
+
+		// Polydrug Trends Chart
+		const polydrugTrendsSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Single-Drug vs Multi-Drug Overdoses Over Time",
+				"subtitle": "Proportional trends in polydrug complexity, Allegheny County (2007-2025)",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 400,
+			"data": { "url": "overdose_data.csv" },
+			"transform": [
+				{
+					"calculate": "(datum.combined_od1 != null && datum.combined_od1 != '' ? 1 : 0) + (datum.combined_od2 != null && datum.combined_od2 != '' ? 1 : 0) + (datum.combined_od3 != null && datum.combined_od3 != '' ? 1 : 0) + (datum.combined_od4 != null && datum.combined_od4 != '' ? 1 : 0) + (datum.combined_od5 != null && datum.combined_od5 != '' ? 1 : 0)",
+					"as": "substance_count"
+				},
+				{
+					"calculate": "datum.substance_count == 1 ? 'Single Drug' : 'Multiple Drugs'",
+					"as": "drug_type"
+				},
+				{ "aggregate": [{ "op": "count", "as": "cases" }], "groupby": ["case_year", "drug_type"] }
+			],
+			"mark": { "type": "area", "interpolate": "monotone" },
+			"encoding": {
+				"x": { "field": "case_year", "type": "ordinal", "title": "Year" },
+				"y": {
+					"field": "cases",
+					"type": "quantitative",
+					"title": "Percentage of Cases (%)",
+					"stack": "normalize"
+				},
+				"color": {
+					"field": "drug_type",
+					"scale": {
+						"domain": ["Single Drug", "Multiple Drugs"],
+						"range": ["#3498db", "#e74c3c"]
+					}
+				},
+				"tooltip": [
+					{ "field": "case_year", "title": "Year" },
+					{ "field": "drug_type", "title": "Type" },
+					{ "field": "cases", "title": "Cases" }
+				]
+			}
+		};
+		vegaEmbed('#vis-polydrug-trends', polydrugTrendsSpec).catch(console.error);
+
+		// Age-Substance Patterns Chart
+		const ageSubstancePatternsSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Substance Use Patterns by Age Group",
+				"subtitle": "Percentage of each age group using each substance (multiple substances possible)",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 400,
+			"data": {
+				"url": "overdose_data.csv"
+			},
+			"transform": [
+				{ "filter": "datum.age != null && datum.combined_od1 != null" },
+				{ "calculate": "datum.age < 25 ? '18-24' : datum.age < 35 ? '25-34' : datum.age < 45 ? '35-44' : datum.age < 55 ? '45-54' : '55+'", "as": "age_group" },
+				{ "filter": "datum.combined_od1 == 'Fentanyl' || datum.combined_od1 == 'Cocaine' || datum.combined_od1 == 'Alcohol' || datum.combined_od1 == 'Heroin' || datum.combined_od1 == 'Alprazolam'" },
+				{ "aggregate": [{ "op": "count", "as": "cases" }], "groupby": ["age_group", "combined_od1"] },
+				{ "window": [{ "op": "sum", "field": "cases", "as": "age_total" }], "groupby": ["age_group"] },
+				{ "calculate": "datum.cases / datum.age_total * 100", "as": "percentage" }
+			],
+			"mark": { "type": "bar" },
+			"encoding": {
+				"x": { "field": "age_group", "type": "nominal", "title": "Age Group", "sort": ["18-24", "25-34", "35-44", "45-54", "55+"] },
+				"y": {
+					"field": "percentage",
+					"type": "quantitative",
+					"title": "Percentage of Age Group Using Substance (%)",
+					"scale": { "domain": [0, 250] }
+				},
+				"color": {
+					"field": "combined_od1",
+					"type": "nominal",
+					"title": "Primary Substance",
+					"scale": { "scheme": "category10" }
+				},
+				"tooltip": [
+					{ "field": "age_group", "title": "Age Group" },
+					{ "field": "combined_od1", "title": "Substance" },
+					{ "field": "cases", "title": "Cases" },
+					{ "field": "percentage", "title": "Percentage", "format": ".1f" }
+				]
+			}
+		};
+		vegaEmbed('#vis-age-substance-patterns', ageSubstancePatternsSpec).catch(console.error);
+
+		// Racial Disparities Chart
+		const racialDisparitiesSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Overdose Deaths by Race Over Time",
+				"subtitle": "Annual death counts showing differential crisis trajectories",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 400,
+			"data": {
+				"url": "overdose_data.csv"
+			},
+			"transform": [
+				{ "filter": "datum.race != null" },
+				{ "filter": "datum.race == 'W' || datum.race == 'B' || datum.race == 'H'" },
+				{ "aggregate": [{ "op": "count", "as": "cases" }], "groupby": ["case_year", "race"] },
+				{ "calculate": "datum.race == 'W' ? 'White' : datum.race == 'B' ? 'Black' : 'Hispanic'", "as": "race_label" }
+			],
+			"mark": { "type": "line", "point": true, "strokeWidth": 3 },
+			"encoding": {
+				"x": { "field": "case_year", "type": "ordinal", "title": "Year" },
+				"y": { "field": "cases", "type": "quantitative", "title": "Annual Deaths" },
+				"color": {
+					"field": "race_label",
+					"type": "nominal",
+					"title": "Race/Ethnicity",
+					"scale": { "range": ["#2c3e50", "#e74c3c", "#f39c12"] }
+				},
+				"tooltip": [
+					{ "field": "case_year", "title": "Year" },
+					{ "field": "race_label", "title": "Race/Ethnicity" },
+					{ "field": "cases", "title": "Deaths" }
+				]
+			}
+		};
+		vegaEmbed('#vis-racial-disparities', racialDisparitiesSpec).catch(console.error);
+
+		// Gender-Polydrug Chart
+		const genderPolydrugSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Polydrug Complexity by Gender",
+				"subtitle": "Distribution of substance count in fatal overdoses",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 500,
+			"height": 300,
+			"data": {
+				"url": "overdose_data.csv"
+			},
+			"transform": [
+				{ "filter": "datum.sex != null && datum.combined_od1 != null && datum.combined_od1 != ''" },
+				{
+					"calculate": "1 + (datum.combined_od2 != null && datum.combined_od2 != '' ? 1 : 0) + (datum.combined_od3 != null && datum.combined_od3 != '' ? 1 : 0) + (datum.combined_od4 != null && datum.combined_od4 != '' ? 1 : 0) + (datum.combined_od5 != null && datum.combined_od5 != '' ? 1 : 0)",
+					"as": "substance_count"
+				},
+				{
+					"calculate": "datum.substance_count >= 4 ? '4+' : toString(datum.substance_count)",
+					"as": "substance_count_grouped"
+				},
+				{ "aggregate": [{ "op": "count", "as": "cases" }], "groupby": ["sex", "substance_count_grouped"] },
+				{ "window": [{ "op": "sum", "field": "cases", "as": "gender_total" }], "groupby": ["sex"] },
+				{ "calculate": "datum.cases / datum.gender_total * 100", "as": "percentage" }
+			],
+			"mark": "bar",
+			"encoding": {
+				"x": {
+					"field": "substance_count_grouped",
+					"type": "ordinal",
+					"sort": ["1", "2", "3", "4+"],
+					"title": "Number of Substances"
+				},
+				"y": {
+					"field": "percentage",
+					"type": "quantitative",
+					"title": "Percentage of Cases (%)"
+				},
+				"color": {
+					"field": "sex",
+					"type": "nominal",
+					"scale": { "range": ["#3498db", "#e74c3c"] },
+					"legend": { "title": "Gender" }
+				},
+				"xOffset": { "field": "sex" },
+				"tooltip": [
+					{ "field": "sex", "title": "Gender" },
+					{ "field": "substance_count_grouped", "title": "Substance Count" },
+					{ "field": "cases", "title": "Cases" },
+					{ "field": "percentage", "title": "Percentage", "format": ".1f" }
+				]
+			}
+		};
+
+		vegaEmbed('#vis-gender-polydrug', genderPolydrugSpec).catch(console.error);
+
+
+		const polydrugInteractionSpec = {
+			"$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+			"title": {
+				"text": "Substance Co-occurrence Patterns",
+				"subtitle": "Which substances appear together vs. in isolation (minimum 50 cases)",
+				"fontSize": 14,
+				"subtitleFontSize": 12,
+				"anchor": "start"
+			},
+			"width": 600,
+			"height": 400,
+			"data": { "url": "overdose_data.csv" },
+			"transform": [
+				{ "filter": "datum.combined_od1 != null && datum.combined_od1 != ''" },
+				{ "filter": "datum.combined_od1 == 'Fentanyl' || datum.combined_od1 == 'Cocaine' || datum.combined_od1 == 'Alcohol' || datum.combined_od1 == 'Heroin' || datum.combined_od1 == 'Alprazolam' || datum.combined_od1 == 'Acetyl Fentanyl'" },
+				{ "calculate": "datum.combined_od2 == null || datum.combined_od2 == '' ? 'Isolated' : 'Co-occurring'", "as": "occurrence_type" },
+				{ "aggregate": [{ "op": "count", "as": "cases" }], "groupby": ["combined_od1", "occurrence_type"] },
+				{ "window": [{ "op": "sum", "field": "cases", "as": "total_cases" }], "groupby": ["combined_od1"] },
+				{ "calculate": "datum.cases / datum.total_cases * 100", "as": "percentage" },
+				{ "filter": "datum.total_cases >= 50" }
+			],
+			"mark": { "type": "bar" },
+			"encoding": {
+				"x": { "field": "combined_od1", "type": "nominal", "title": "Primary Substance", "sort": { "field": "total_cases", "order": "descending" } },
+				"y": { "field": "percentage", "type": "quantitative", "title": "Percentage of Cases (%)" },
+				"color": {
+					"field": "occurrence_type",
+					"type": "nominal",
+					"title": "Pattern",
+					"scale": { "domain": ["Isolated", "Co-occurring"], "range": ["#3498db", "#e74c3c"] }
+				},
+				"tooltip": [
+					{ "field": "combined_od1", "type": "nominal", "title": "Substance" },
+					{ "field": "occurrence_type", "type": "nominal", "title": "Pattern" },
+					{ "field": "cases", "type": "quantitative", "title": "Cases" },
+					{ "field": "percentage", "type": "quantitative", "title": "Percentage", "format": ".1f" }
+				]
+			}
+		};
+		vegaEmbed('#vis-polydrug-interaction', polydrugInteractionSpec).catch(console.error);
+
+	</script>
+</body>
+
+</html>
